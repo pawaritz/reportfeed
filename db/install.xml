@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/reportfeed/db" VERSION="20261011" COMMENT="XMLDB file for Moodle local/reportfeed"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_reportfeed_schedule" COMMENT="HR feed schedules: when, which courses, which columns">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="frequency" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="weekly" SEQUENCE="false" COMMENT="weekly, biweekly, semimonthly or monthly"/>
+        <FIELD NAME="weekday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="0 Sunday to 6 Saturday, site timezone"/>
+        <FIELD NAME="monthrule" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="day" SEQUENCE="false" COMMENT="Monthly: day, lastday, firstdow, lastdow, firstworkday or lastworkday"/>
+        <FIELD NAME="monthday" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Monthly rule day: day of the month, 29 to 31 mean the last day when the month is shorter"/>
+        <FIELD NAME="anchor" TYPE="int" LENGTH="8" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Every 2 weeks: a date as YYYYMMDD in a week that sends"/>
+        <FIELD NAME="hour" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="8" SEQUENCE="false"/>
+        <FIELD NAME="minute" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="scope" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="all" SEQUENCE="false" COMMENT="all, categories or courses"/>
+        <FIELD NAME="scopeids" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Comma separated category or course ids"/>
+        <FIELD NAME="format" TYPE="char" LENGTH="8" NOTNULL="true" DEFAULT="csv" SEQUENCE="false" COMMENT="csv or xlsx"/>
+        <FIELD NAME="hrfiles" TYPE="char" LENGTH="60" NOTNULL="true" DEFAULT="learner_course,learner_summary" SEQUENCE="false" COMMENT="Comma separated HR files this schedule sends"/>
+        <FIELD NAME="activityopts" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON: optional activity-level files, their fields and filters, engagement window"/>
+        <FIELD NAME="identitycols" TYPE="char" LENGTH="60" NOTNULL="true" DEFAULT="idnumber" SEQUENCE="false" COMMENT="Comma separated identity columns"/>
+        <FIELD NAME="usebom" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="zip" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="ownerid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="lastrun" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="laststatus" TYPE="char" LENGTH="12" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="enabled" UNIQUE="false" FIELDS="enabled"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_bundle" COMMENT="A named set of courses a schedule can use as its scope">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_bundlecourse" COMMENT="The courses in a bundle">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="bundleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="bundleid" TYPE="foreign" FIELDS="bundleid" REFTABLE="local_reportfeed_bundle" REFFIELDS="id"/>
+        <KEY NAME="bundlecourse" TYPE="unique" FIELDS="bundleid, courseid"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_recipient" COMMENT="Who receives an HR feed schedule">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="scheduleid" TYPE="foreign" FIELDS="scheduleid" REFTABLE="local_reportfeed_schedule" REFFIELDS="id"/>
+        <KEY NAME="scheduleuser" TYPE="unique" FIELDS="scheduleid, userid"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_extrecipient" COMMENT="HR feed recipients who are not Moodle users: an email address typed in by an admin">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="scheduleid" TYPE="foreign" FIELDS="scheduleid" REFTABLE="local_reportfeed_schedule" REFFIELDS="id"/>
+        <KEY NAME="scheduleemail" TYPE="unique" FIELDS="scheduleid, email"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_digestcourse" COMMENT="Teacher digest preference per recipient and course">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="weekday" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="hour" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="8" SEQUENCE="false"/>
+        <FIELD NAME="choices" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Comma separated digest columns the recipient chose"/>
+        <FIELD NAME="nominatedby" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="usercourse" TYPE="unique" FIELDS="userid, courseid"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_run" COMMENT="One row per scheduled run: metadata only, never CSV content">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="type" TYPE="char" LENGTH="20" NOTNULL="true" SEQUENCE="false" COMMENT="hrfeed or teacherdigest"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0 when not an HR feed run"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Teacher digest recipient, else 0"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Teacher digest course, else 0"/>
+        <FIELD NAME="manual" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 when an admin pressed Run now"/>
+        <FIELD NAME="periodend" TYPE="int" LENGTH="8" NOTNULL="true" SEQUENCE="false" COMMENT="Send date in the site timezone as YYYYMMDD"/>
+        <FIELD NAME="timedue" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="The scheduled moment; a run starting 24 hours later expires"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="12" NOTNULL="true" DEFAULT="queued" SEQUENCE="false"/>
+        <FIELD NAME="attempts" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timestarted" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timefinished" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="summary" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON: per file name, rows, bytes, sha256"/>
+        <FIELD NAME="error" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="oneperperiod" TYPE="unique" FIELDS="type, scheduleid, userid, courseid, manual, periodend"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_delivery" COMMENT="One row per recipient and file handed to Moodle mail">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="extid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="External recipient row, 0 for a Moodle user"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="External recipient address, kept for the run log"/>
+        <FIELD NAME="filekey" TYPE="char" LENGTH="30" NOTNULL="true" SEQUENCE="false" COMMENT="learner_course, learner_summary, an activity file or teacher_digest"/>
+        <FIELD NAME="part" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Part number of a split report, 0 when the row records a skip for all parts"/>
+        <FIELD NAME="status" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="pending" SEQUENCE="false" COMMENT="pending, sent or skipped"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="runid" TYPE="foreign" FIELDS="runid" REFTABLE="local_reportfeed_run" REFFIELDS="id"/>
+        <KEY NAME="runuserfile" TYPE="unique" FIELDS="runid, userid, extid, filekey, part"/>
+      </KEYS>
+    </TABLE>
+    <TABLE NAME="local_reportfeed_roster" COMMENT="Per run: which learners were new, unchanged or removed since the last send, so a retry sends the same roster">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="runid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="changetype" TYPE="char" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="new, unchanged or removed"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Why a learner was removed"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="runuser" TYPE="unique" FIELDS="runid, userid"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="schedulerun" UNIQUE="false" FIELDS="scheduleid, runid"/>
+        <INDEX NAME="userid" UNIQUE="false" FIELDS="userid"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

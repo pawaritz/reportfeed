@@ -1,0 +1,5 @@
+user_id,username,courses_enrolled,courses_completed,avg_completion_percent,last_access_site,days_inactive_site
+{u:s1},s1,1,0,66.67,2026-10-06T11:00:00Z,0
+{u:s2},s2,1,1,100.00,,34
+{u:s3},s3,1,0,0.00,2026-09-07T12:00:00Z,29
+{u:s4},s4,1,0,33.33,,1

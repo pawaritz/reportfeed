@@ -1,0 +1,5 @@
+user_id,idnumber,email,course_id,course_idnumber,course_shortname,enrol_start,completion_status,completion_percent,completion_date,grade,grade_percent,last_access_course,days_inactive
+{u:s1},S1,s1@example.com,{c},G-1,GOLD1,2026-09-01T00:00:00Z,in_progress,66.67,,80.00,80.00,2026-10-05T12:00:00Z,1
+{u:s2},S2,s2@example.com,{c},G-1,GOLD1,2026-09-02T00:00:00Z,completed,100.00,2026-10-01T08:30:00Z,100.00,100.00,,34
+{u:s3},S3,s3@example.com,{c},G-1,GOLD1,2026-08-01T00:00:00Z,not_started,0.00,,,,2026-09-06T12:00:00Z,30
+{u:s4},'=CMD(),s4@example.com,{c},G-1,GOLD1,2026-10-05T00:00:00Z,in_progress,33.33,,,,,1

@@ -1,0 +1,5 @@
+course_id,course_shortname,user_id,fullname,completion_status,completion_percent,days_inactive,grade
+{c},GOLD1,{u:s1},Ann One,in_progress,66.67,1,80.00
+{c},GOLD1,{u:s2},Bob Two,completed,100.00,34,100.00
+{c},GOLD1,{u:s3},Cat Three,not_started,0.00,30,
+{c},GOLD1,{u:s4},"Pat O""Neil, Jr",in_progress,33.33,1,55.00
