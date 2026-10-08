@@ -64,7 +64,7 @@ you ticked. Subject: `[Reportfeed] hr_feed | <file> | <site> | <YYYY-MM-DD>`, wi
 column in plain words and shows the first rows.
 
 **Learner roster.** Tick "Learner roster" under "Learner files" (alone, if that is all the receiving system needs). One
-row per learner in the covered courses, with `status` (active or inactive), `change` (new, unchanged or removed since
+row per learner in the covered courses, with `status` (active or inactive), `change_type` (new, unchanged or removed since
 the roster last sent) and, for a removed learner, a `reason`: `account_deleted`, `account_suspended`, `not_enrolled`
 (no enrolment left in the covered courses) or `not_active_learner` (enrolment suspended or ended, or no longer a
 learner). A removed learner appears once, in the first roster after leaving. The very first roster marks everyone as
@@ -148,8 +148,10 @@ per user and per context. Uninstalling the plugin removes its tables and setting
 
 - Tested on PostgreSQL 17, MySQL 8.4 and MariaDB 11.4. The GitHub Actions workflow has not been run.
 - Real mail providers were not tested, only a local SMTP sink.
-- The learner roster stores a small snapshot per run (user id and change), and a retry of an old run after newer runs have
-  been pruned compares against nothing and shows everyone as new.
+- The learner roster stores a small snapshot per run (user id and change). The newest three runs of a schedule are kept,
+  plus the newest sent one, which is the comparison for the next send. Identity is read live, so the row of a learner
+  whose account was deleted has only `user_id` and `account_created`; match on `user_id`. A "Run now" is a real run: it
+  sends to the schedule's recipients and moves the roster comparison.
 - Engagement counts come from the standard log store only, count the days the log is kept, and do not measure time spent.
   Site logins are site-wide, so the same figure is on every course row of a learner.
 - Assignments: a group or user override of the due date is not applied (only a learner's extension), and team submissions
@@ -160,11 +162,17 @@ per user and per context. Uninstalling the plugin removes its tables and setting
 - "Send test to me" builds the files during the web request, so a very large site may hit the PHP time limit.
 - In opt-out digest mode, a teacher who gets the capability after the weekly default moment first receives a digest the following week.
 - One site timezone for all schedules. Moodle sends external addresses through its mail function, not the message API, so they have no notification preferences.
+- A teacher needs an active enrolment in the course, not just the role, to receive its digest.
+- `completion_status` is the authority on course completion; `completion_percent` is activity progress and can be below 100 for a completed course (activities added later).
+- Parse the CSV files by header name, not by column position: identity and optional columns vary per schedule.
+- Anyone with `manageschedules` can preview the feed and send a test of the whole feed to themselves, whatever their receive capability; treat that capability as access to all learner data. Changing a schedule's content is not limited to holders of the outside-recipients capability.
 - English only.
 
 ## Support
 
-Report bugs and requests through the issue tracker of the plugin's repository.
+Source code: https://github.com/pawaritz/reportfeed
+
+Report bugs and requests through the issue tracker: https://github.com/pawaritz/reportfeed/issues
 
 ## Licence
 

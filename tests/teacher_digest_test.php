@@ -453,6 +453,29 @@ final class teacher_digest_test extends \advanced_testcase {
         $this->assertSame('sent', $DB->get_field('local_reportfeed_run', 'status', ['id' => $run->id]));
     }
 
+    public function test_a_teacher_whose_enrolment_is_suspended_gets_nothing(): void {
+        global $DB;
+        $course = $this->course();
+        $teacher = $this->teacher($course);
+        $this->settings($teacher, $course);
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher', 'manual', 0, 0, ENROL_USER_SUSPENDED);
+
+        $this->assertCount(0, $this->send_all());
+        $run = $DB->get_record('local_reportfeed_run', ['type' => 'teacherdigest'], '*', MUST_EXIST);
+        $this->assertSame('notenrolled', $DB->get_field('local_reportfeed_delivery', 'reason', ['runid' => $run->id]));
+    }
+
+    public function test_a_nominee_with_a_suspended_enrolment_is_refused(): void {
+        $course = $this->course();
+        $a = $this->teacher($course);
+        $b = $this->teacher($course);
+        $this->getDataGenerator()->enrol_user($b->id, $course->id, 'editingteacher', 'manual', 0, 0, ENROL_USER_SUSPENDED);
+
+        $errors = digest_settings::errors(['weekday' => 1, 'hour' => 8, 'nominees' => [$b->id]], $course->id, $a->id);
+
+        $this->assertArrayHasKey('nominees', $errors);
+    }
+
     public function test_settings_modes_and_defaults(): void {
         $course = $this->course();
         $teacher = $this->teacher($course);

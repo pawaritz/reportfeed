@@ -422,7 +422,7 @@ final class activity_provider {
             "courseid = :c AND itemtype = 'mod' AND itemmodule = :m AND itemnumber = 0",
             ['c' => $courseid, 'm' => $module],
             '',
-            'id, iteminstance, gradetype, grademin, grademax'
+            'id, iteminstance, gradetype, grademin, grademax, hidden'
         );
         foreach ($rs as $item) {
             $items[(int) $item->iteminstance] = $item;
@@ -445,18 +445,36 @@ final class activity_provider {
             return $grades;
         }
         [$in, $params] = $DB->get_in_or_equal(array_map(fn($i) => (int) $i->id, $items), SQL_PARAMS_NAMED, 'gi');
+        $itemhidden = [];
+        foreach ($items as $item) {
+            $itemhidden[(int) $item->id] = $this->is_hidden((int) $item->hidden);
+        }
         $rs = $DB->get_recordset_select(
             'grade_grades',
             "itemid $in AND userid BETWEEN :lo AND :hi AND finalgrade IS NOT NULL",
             $params + $range,
             '',
-            'id, itemid, userid, finalgrade'
+            'id, itemid, userid, finalgrade, hidden'
         );
         foreach ($rs as $g) {
+            // Hidden grades stay out, as in learner_course: the HR feed never sees what a learner cannot see (C9, K4).
+            if ($itemhidden[(int) $g->itemid] || $this->is_hidden((int) $g->hidden)) {
+                continue;
+            }
             $grades[(int) $g->itemid][(int) $g->userid] = (float) $g->finalgrade;
         }
         $rs->close();
         return $grades;
+    }
+
+    /**
+     * Whether a gradebook hidden flag hides the grade now (1 is hidden, a later timestamp is hidden until then).
+     *
+     * @param int $hidden the grade_items or grade_grades hidden field
+     * @return bool
+     */
+    private function is_hidden(int $hidden): bool {
+        return $hidden === 1 || $hidden > $this->clock->time();
     }
 
     /**

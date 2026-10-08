@@ -89,7 +89,7 @@ final class roster_test extends \advanced_testcase {
     private function roster(array $courseids, int $scheduleid, ?int $runid): array {
         $out = [];
         foreach (roster::rows(new data_provider(), $courseids, $scheduleid, $runid) as $row) {
-            $out[$row['user_id']] = [$row['change'], $row['reason']];
+            $out[$row['user_id']] = [$row['change_type'], $row['reason']];
         }
         return $out;
     }
@@ -240,7 +240,27 @@ final class roster_test extends \advanced_testcase {
         );
         $csv = reset($mails[0]['csv']);
         $lines = array_values(array_filter(explode("\r\n", ltrim($csv, "\xEF\xBB\xBF"))));
-        $this->assertSame('user_id,idnumber,status,change,reason,account_created', $lines[0]);
+        $this->assertSame('user_id,idnumber,status,change_type,reason,account_created', $lines[0]);
         $this->assertStringStartsWith($a->id . ',EMP-1,active,new,,', $lines[1]);
+    }
+
+    public function test_the_baseline_survives_newer_failed_runs_and_a_short_retention(): void {
+        global $DB;
+        $course = $this->getDataGenerator()->create_course();
+        $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $sid = $this->schedule();
+        $sent = $this->make_run($sid, 1);
+        $this->roster([$course->id], $sid, $sent);
+        foreach (range(2, 6) as $n) {
+            $this->roster([$course->id], $sid, $this->make_run($sid, $n, 'failed'));
+        }
+        $this->assertTrue($DB->record_exists('local_reportfeed_roster', ['runid' => $sent]), 'prune keeps the baseline');
+
+        // The sent run is old enough to be purged by age, but it is still the baseline of the next send.
+        $DB->set_field('local_reportfeed_run', 'timecreated', self::NOW - 400 * DAYSECS, ['id' => $sent]);
+        retention::purge(self::NOW);
+        $this->assertTrue($DB->record_exists('local_reportfeed_run', ['id' => $sent]));
+        $rows = $this->roster([$course->id], $sid, $this->make_run($sid, 7));
+        $this->assertSame('unchanged', array_values($rows)[0][0]);
     }
 }

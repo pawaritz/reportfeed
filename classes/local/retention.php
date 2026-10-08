@@ -60,6 +60,21 @@ final class retention {
         $params['cutoff'] = $cutoff;
         $old = 'timecreated < :cutoff AND status ' . $insql;
 
+        // The newest sent run of each schedule that has a roster stays: it is the baseline of the next roster, and
+        // losing it (a monthly schedule with a short retention) would mark every learner as new.
+        $baselines = $DB->get_fieldset_sql(
+            "SELECT MAX(r.id)
+               FROM {local_reportfeed_run} r
+              WHERE r.type = 'hrfeed' AND r.status = 'sent'
+                AND EXISTS (SELECT 1 FROM {local_reportfeed_roster} ro WHERE ro.runid = r.id)
+           GROUP BY r.scheduleid"
+        );
+        if ($baselines) {
+            [$keepsql, $keepparams] = $DB->get_in_or_equal($baselines, SQL_PARAMS_NAMED, 'keep', false);
+            $old .= ' AND id ' . $keepsql;
+            $params += $keepparams;
+        }
+
         $DB->execute(
             'DELETE FROM {local_reportfeed_delivery} WHERE runid IN (SELECT id FROM {local_reportfeed_run} WHERE ' . $old . ')',
             $params
@@ -69,6 +84,15 @@ final class retention {
         $DB->delete_records_select('local_reportfeed_roster', 'runid NOT IN (SELECT id FROM {local_reportfeed_run})');
 
         $DB->delete_records_select('local_reportfeed_digestcourse', 'courseid NOT IN (SELECT id FROM {course})');
+
+        // A worker killed between storing an attachment and sending it leaves a learner file in the file pool.
+        $fs = get_file_storage();
+        $syscontextid = \context_system::instance()->id;
+        foreach ($fs->get_area_files($syscontextid, 'local_reportfeed', 'attachment', false, 'id', false) as $file) {
+            if ($file->get_timecreated() < ($now ?? time()) - DAYSECS) {
+                $file->delete();
+            }
+        }
         return $count;
     }
 }

@@ -59,7 +59,7 @@ final class contract {
     public const HR_DEFAULT = ['learner_course', 'learner_summary'];
 
     /** @var string[] Columns after the identity columns in learner_roster. */
-    private const LEARNER_ROSTER = ['status', 'change', 'reason', 'account_created'];
+    private const LEARNER_ROSTER = ['status', 'change_type', 'reason', 'account_created'];
 
     /** @var string[] The optional activity-level files, in their fixed order. */
     public const ACTIVITY_FILES = ['activity_completion', 'activity_assignments', 'activity_quizzes', 'activity_engagement'];
@@ -96,7 +96,7 @@ final class contract {
         'last_access_course' => 'time', 'days_inactive' => 'int',
         'courses_enrolled' => 'int', 'courses_completed' => 'int', 'avg_completion_percent' => 'percent',
         'last_access_site' => 'time', 'days_inactive_site' => 'int',
-        'status' => 'text', 'change' => 'text', 'reason' => 'text', 'account_created' => 'time',
+        'status' => 'text', 'change_type' => 'text', 'reason' => 'text', 'account_created' => 'time',
         'cm_id' => 'int', 'activity_name' => 'text', 'activity_type' => 'text', 'section' => 'int',
         'activity_status' => 'text', 'due_date' => 'time', 'submission_status' => 'text', 'submitted_date' => 'time',
         'overdue' => 'text', 'days_late' => 'int', 'attempts' => 'int', 'finished_attempts' => 'int',

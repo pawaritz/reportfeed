@@ -64,7 +64,7 @@ final class roster {
                     'username' => $user->username ?? '',
                     'email' => $user->email ?? '',
                     'status' => $change === 'removed' ? 'inactive' : 'active',
-                    'change' => $change,
+                    'change_type' => $change,
                     'reason' => $reason,
                     'account_created' => $user && $user->timecreated ? (int) $user->timecreated : null,
                 ];
@@ -111,6 +111,8 @@ final class roster {
         ksort($entries);
 
         if ($runid) {
+            // All or nothing: a half-stored roster would be reused by a retry and become the next baseline.
+            $transaction = $DB->start_delegated_transaction();
             $batch = [];
             foreach ($entries as $id => [$change, $reason]) {
                 $batch[] = (object) [
@@ -126,6 +128,7 @@ final class roster {
                 $DB->insert_records('local_reportfeed_roster', $batch);
             }
             self::prune($scheduleid);
+            $transaction->allow_commit();
         }
         return $entries;
     }
@@ -141,6 +144,33 @@ final class roster {
      */
     private static function baseline(int $scheduleid, ?int $before): array {
         global $DB;
+        $run = self::baseline_run($scheduleid, $before);
+        $ids = [];
+        if ($run) {
+            $set = $DB->get_recordset_select(
+                'local_reportfeed_roster',
+                "runid = :r AND changetype <> 'removed'",
+                ['r' => $run],
+                '',
+                'userid'
+            );
+            foreach ($set as $row) {
+                $ids[(int) $row->userid] = true;
+            }
+            $set->close();
+        }
+        return $ids;
+    }
+
+    /**
+     * The newest sent run of a schedule that has roster rows: the baseline of the next roster.
+     *
+     * @param int $scheduleid
+     * @param int|null $before only runs older than this one count; null for any
+     * @return int|null run id
+     */
+    private static function baseline_run(int $scheduleid, ?int $before = null): ?int {
+        global $DB;
         $runs = $DB->get_fieldset_sql(
             "SELECT r.id
                FROM {local_reportfeed_run} r
@@ -151,21 +181,7 @@ final class roster {
             0,
             1
         );
-        $ids = [];
-        if ($runs) {
-            $set = $DB->get_recordset_select(
-                'local_reportfeed_roster',
-                "runid = :r AND changetype <> 'removed'",
-                ['r' => $runs[0]],
-                '',
-                'userid'
-            );
-            foreach ($set as $row) {
-                $ids[(int) $row->userid] = true;
-            }
-            $set->close();
-        }
-        return $ids;
+        return $runs ? (int) $runs[0] : null;
     }
 
     /**
@@ -220,7 +236,12 @@ final class roster {
         );
         if (count($runs) > self::KEEP) {
             $oldest = $runs[self::KEEP - 1];
-            $DB->delete_records_select('local_reportfeed_roster', 'scheduleid = ? AND runid < ?', [$scheduleid, $oldest]);
+            // The baseline (newest sent run) is never dropped, even when newer runs failed.
+            $DB->delete_records_select(
+                'local_reportfeed_roster',
+                'scheduleid = ? AND runid < ? AND runid <> ?',
+                [$scheduleid, $oldest, self::baseline_run($scheduleid) ?? 0]
+            );
         }
     }
 }

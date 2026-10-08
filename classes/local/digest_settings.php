@@ -206,6 +206,7 @@ final class digest_settings {
             if (
                 !$user || (int) $nominee === $userid
                 || !has_capability('local/reportfeed:receiveteacherdigest', $context, $user->id)
+                || !is_enrolled($context, $user->id, 'local/reportfeed:receiveteacherdigest', true)
             ) {
                 $bad[] = $user ? fullname($user) : '#' . (int) $nominee;
             }

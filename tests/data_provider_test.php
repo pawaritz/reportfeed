@@ -183,6 +183,51 @@ final class data_provider_test extends \advanced_testcase {
     }
 
     /**
+     * Only completed and passed activities raise the percent, as in core; a failed one still means "in progress".
+     */
+    public function test_a_failed_completion_is_progress_but_not_percent(): void {
+        global $DB;
+        $gen = $this->getDataGenerator();
+        $course = $this->course();
+        $one = $this->activity($course);
+        $this->activity($course);
+        $user = $gen->create_and_enrol($course, 'student');
+        // Manual tracking cannot fail, so write the state the way a graded activity would leave it.
+        $DB->insert_record('course_modules_completion', (object) [
+            'coursemoduleid' => $one, 'userid' => $user->id, 'completionstate' => COMPLETION_COMPLETE_FAIL,
+            'viewed' => 0, 'timemodified' => time(),
+        ]);
+
+        $row = $this->rows($course->id)[$user->id];
+
+        $this->assertSame('in_progress', $row['completion_status']);
+        $this->assertEqualsWithDelta(0.0, $row['completion_percent'], 0.001);
+    }
+
+    /**
+     * A course total on a scale has no points, so grade and percent stay empty instead of showing a scale index.
+     */
+    public function test_a_scale_course_total_is_blank(): void {
+        global $DB;
+        $gen = $this->getDataGenerator();
+        $course = $this->course();
+        $user = $gen->create_and_enrol($course, 'student');
+        $scale = $gen->create_scale(['scale' => 'Poor,Fair,Good']);
+        $courseitem = \grade_item::fetch_course_item($course->id);
+        $courseitem->gradetype = GRADE_TYPE_SCALE;
+        $courseitem->scaleid = $scale->id;
+        $courseitem->grademax = 3;
+        $courseitem->update();
+        grade_regrade_final_grades($course->id);
+        $DB->set_field('grade_grades', 'finalgrade', 2, ['itemid' => $courseitem->id, 'userid' => $user->id]);
+
+        $row = $this->rows($course->id)[$user->id];
+
+        $this->assertNull($row['grade']);
+        $this->assertNull($row['grade_percent']);
+    }
+
+    /**
      * Completion off, or no tracked activity, gives an empty percent (and no status when completion is off).
      */
     public function test_completion_off_or_nothing_tracked(): void {

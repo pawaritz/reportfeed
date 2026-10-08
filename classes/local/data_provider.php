@@ -217,7 +217,7 @@ final class data_provider {
         [$insql, $params] = $DB->get_in_or_equal($chunk, SQL_PARAMS_NAMED, 'uid');
         $sql = "SELECT u.id AS user_id, u.idnumber, u.username, u.email, u.lastaccess AS site_lastaccess, $names,
                        en.enrolstart, ula.timeaccess AS course_lastaccess, cc.timecompleted,
-                       COALESCE(dn.done, 0) AS done
+                       COALESCE(dn.done, 0) AS done, COALESCE(dn.started, 0) AS started
                   FROM {user} u
                   JOIN (SELECT ue.userid,
                                MIN(CASE WHEN ue.timestart > 0 THEN ue.timestart ELSE ue.timecreated END) AS enrolstart
@@ -228,7 +228,8 @@ final class data_provider {
                       GROUP BY ue.userid) en ON en.userid = u.id
              LEFT JOIN {user_lastaccess} ula ON ula.userid = u.id AND ula.courseid = :ucourse
              LEFT JOIN {course_completions} cc ON cc.userid = u.id AND cc.course = :cccourse
-             LEFT JOIN (SELECT cmc.userid, COUNT(1) AS done
+             LEFT JOIN (SELECT cmc.userid, COUNT(1) AS started,
+                               SUM(CASE WHEN cmc.completionstate IN (1, 2) THEN 1 ELSE 0 END) AS done
                           FROM {course_modules_completion} cmc
                           JOIN {course_modules} cm ON cm.id = cmc.coursemoduleid
                          WHERE cm.course = :dcourse AND cm.completion > 0 AND cm.visible = 1
@@ -254,6 +255,8 @@ final class data_provider {
 
         $item = grade_get_course_grades($courseid, array_keys($rows));
         $range = (float) $item->grademax - (float) $item->grademin;
+        // A course total on a scale or as text has no points: the columns stay empty rather than show an index.
+        $valuetype = empty($item->scaleid) && $range > 0;
 
         foreach ($rows as $userid => $r) {
             $done = (int) $r->done;
@@ -261,15 +264,15 @@ final class data_provider {
             $g = $item->grades[$userid] ?? null;
             // The API returns the raw grade even when hidden, so blank it here (C9, K4).
             if (
-                $cangrades && $g && $g->grade !== null && $g->grade !== false
+                $cangrades && $valuetype && $g && $g->grade !== null && $g->grade !== false
                 && ($showhidden || !($g->hidden || $item->hidden))
             ) {
                 $grade = (float) $g->grade;
-                $gradepercent = $range > 0 ? ($grade - (float) $item->grademin) / $range * 100 : null;
+                $gradepercent = ($grade - (float) $item->grademin) / $range * 100;
             }
             $status = null;
             if ($course->enablecompletion) {
-                $status = $r->timecompleted ? 'completed' : ($done > 0 ? 'in_progress' : 'not_started');
+                $status = $r->timecompleted ? 'completed' : ((int) $r->started > 0 ? 'in_progress' : 'not_started');
             }
             $lastaccess = $r->course_lastaccess ? (int) $r->course_lastaccess : null;
             yield [

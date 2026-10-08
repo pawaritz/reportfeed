@@ -540,7 +540,8 @@ final class run_manager {
                         'local_reportfeed_delivery',
                         'status',
                         'pending',
-                        "$where AND status = 'skipped' AND reason IN ('deleted', 'suspended', 'noemail', 'nocapability')",
+                        "$where AND status = 'skipped' AND reason IN "
+                            . "('deleted', 'suspended', 'noemail', 'nocapability', 'notenrolled')",
                         $params
                     );
                     continue;
@@ -720,7 +721,7 @@ final class run_manager {
      * @param int $userid
      * @param string $capability what the recipient must hold
      * @param \context|null $context where they must hold it (the system by default)
-     * @return string|null deleted, suspended, noemail, nocapability or null
+     * @return string|null deleted, suspended, noemail, nocapability, notenrolled or null
      */
     private function ineligible_reason(
         int $userid,
@@ -740,6 +741,10 @@ final class run_manager {
         }
         if (!has_capability($capability, $context ?? \context_system::instance(), $userid)) {
             return 'nocapability';
+        }
+        // A teacher whose enrolment is suspended or ended keeps the role but must stop getting the course's learner data.
+        if ($context instanceof \context_course && !is_enrolled($context, $userid, $capability, true)) {
+            return 'notenrolled';
         }
         return null;
     }
@@ -809,9 +814,9 @@ final class run_manager {
                     $tally = ['active' => 0, 'new' => 0, 'removed' => 0];
                     $rows = (function () use ($provider, $courseids, $schedule, $runid, &$tally) {
                         foreach (roster::rows($provider, $courseids, (int) $schedule->id, $runid) as $row) {
-                            $tally['active'] += $row['change'] === 'removed' ? 0 : 1;
-                            $tally['new'] += $row['change'] === 'new' ? 1 : 0;
-                            $tally['removed'] += $row['change'] === 'removed' ? 1 : 0;
+                            $tally['active'] += $row['change_type'] === 'removed' ? 0 : 1;
+                            $tally['new'] += $row['change_type'] === 'new' ? 1 : 0;
+                            $tally['removed'] += $row['change_type'] === 'removed' ? 1 : 0;
                             yield $row;
                         }
                     })();

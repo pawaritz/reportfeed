@@ -191,6 +191,28 @@ final class activity_provider_test extends \advanced_testcase {
     }
 
     /**
+     * A grade the teacher has hidden (or hidden until a future date) is blank in the file, as in the learner's gradebook.
+     */
+    public function test_hidden_grades_are_blank(): void {
+        [$course, $a, $b] = $this->setup_course();
+        $c = $this->getDataGenerator()->create_and_enrol($course, 'student');
+        $assign = $this->getDataGenerator()->create_module('assign', ['course' => $course->id, 'grade' => 100]);
+        $item = \grade_item::fetch(['itemtype' => 'mod', 'itemmodule' => 'assign', 'iteminstance' => $assign->id]);
+        foreach ([$a, $b, $c] as $user) {
+            $item->update_final_grade($user->id, 70);
+        }
+        \grade_grade::fetch(['itemid' => $item->id, 'userid' => $a->id])->set_hidden(1);
+        \grade_grade::fetch(['itemid' => $item->id, 'userid' => $b->id])->set_hidden(self::NOW + DAYSECS);
+
+        $rows = $this->keyed((new activity_provider($this->clock))->assignments([$course->id], []));
+
+        $this->assertNull($rows["{$a->id}:{$assign->cmid}"]['grade']);
+        $this->assertNull($rows["{$a->id}:{$assign->cmid}"]['grade_percent']);
+        $this->assertNull($rows["{$b->id}:{$assign->cmid}"]['grade'], 'hidden until a date that has not come');
+        $this->assertEqualsWithDelta(70.0, $rows["{$c->id}:{$assign->cmid}"]['grade'], 0.001);
+    }
+
+    /**
      * Attempts and status of quizzes; previews do not count.
      */
     public function test_quizzes(): void {

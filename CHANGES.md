@@ -1,5 +1,22 @@
 # Changes
 
+## 0.9.1 (release candidate)
+
+Fixes from an independent code review (security, privacy and SQL, contract, name check). No schema change.
+
+- Teacher digests: a teacher whose enrolment in the course is suspended or ended no longer receives that course's
+  learner data (the role alone is not enough), and cannot be named as a nominee.
+- Activity files: assignment and quiz grades that the teacher hid (or hid until a later date) are blank, as in the
+  learner's own gradebook and in the learner files.
+- Course total on a scale or as text: `grade` and `grade_percent` stay empty instead of showing a scale index.
+- `completion_percent` now counts completed and passed activities only, as Moodle does. A failed activity still makes
+  the learner `in_progress`.
+- Learner roster: the column `change` is now `change_type` (`change` is a reserved word in MySQL). The file was new in
+  0.9.0 and nothing was released with the old name beyond the release candidate.
+- Learner roster: the whole result of a run is stored in one transaction, and the retention job never deletes the newest
+  sent roster of a schedule, so a monthly schedule with a short retention does not mark everyone as new.
+- Learner files left in the file pool by a killed worker are removed after a day.
+
 ## 0.9.0 (release candidate)
 
 - Getting started page: a live checklist of the setup steps (outgoing mail, attachments, cron, master switch, receiving

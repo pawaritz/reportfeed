@@ -1,9 +1,8 @@
 # Moodle plugin CI for local_reportfeed.
-# STATUS: written from the moodle-plugin-ci 4.x documentation pattern and NOT YET RUN on GitHub.
-# Move this file to .github/workflows/ci.yml in the public repo `moodle-local_reportfeed` (plugin
-# files at the repo root). Expect to fix the first run (see ROADMAP.md, M7). The same checks were run
-# by hand on a test site: phplint, phpcs, phpdoc, validate, savepoints, mustache, PHPUnit
-# (PostgreSQL 17, MariaDB 11.4 and MySQL 8.4.11) and the Behat features (headless Chromium).
+# STATUS: ran green on GitHub on 2026-10-08 (run #2): phplint, phpcs, phpdoc, validate, savepoints, mustache,
+# PHPUnit and the Behat features on PostgreSQL 17, MySQL 8.4 and MariaDB 11.4, PHP 8.3, Moodle 5.3.
+# Lives at .github/workflows/ci.yml in https://github.com/pawaritz/reportfeed (plugin files at the repo root).
+
 name: ci
 
 on: [push, pull_request]
@@ -64,7 +63,7 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: plugin
 

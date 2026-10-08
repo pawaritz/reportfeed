@@ -114,4 +114,27 @@ final class retention_test extends \advanced_testcase {
         $this->assertSame(1, $DB->count_records('local_reportfeed_digestcourse'));
         $this->assertTrue($DB->record_exists('local_reportfeed_digestcourse', ['courseid' => $kept->id]));
     }
+
+    /**
+     * A learner file left in the file pool by a killed worker is removed after a day; a fresh one is not.
+     */
+    public function test_leftover_attachments_are_removed_after_a_day(): void {
+        $this->resetAfterTest();
+        $fs = get_file_storage();
+        $context = \context_system::instance();
+        $make = function (string $name, int $time) use ($fs, $context) {
+            return $fs->create_file_from_string([
+                'contextid' => $context->id, 'component' => 'local_reportfeed', 'filearea' => 'attachment',
+                'itemid' => 0, 'filepath' => '/', 'filename' => $name, 'timecreated' => $time, 'timemodified' => $time,
+            ], 'x');
+        };
+        $make('old.csv', time() - 2 * DAYSECS);
+        $make('fresh.csv', time());
+
+        retention::purge();
+
+        $files = $fs->get_area_files($context->id, 'local_reportfeed', 'attachment', false, 'id', false);
+        $names = array_values(array_map(fn($f) => $f->get_filename(), $files));
+        $this->assertSame(['fresh.csv'], $names);
+    }
 }
