@@ -1,5 +1,20 @@
 # Changes
 
+## 0.9.3 (release candidate)
+
+Easier to find and to set up. No schema change.
+
+- New **Reportfeed dashboard** (Site administration > Reports > Reportfeed > Dashboard): is Reportfeed on, how many setup
+  steps are done and which one is next, your schedules with the number of people each one sends to, the latest runs,
+  and one-click buttons for the common jobs. The on/off switch is on that page.
+- A **Reportfeed section under Site administration > Reports** holds the dashboard, Getting started, Schedules, Course
+  bundles and the Run log. The plugin settings page links to the dashboard, and every Reportfeed screen shows the same
+  row of links at the top.
+- **Send test to me** now says which address the test went to and what to do if nothing arrives. When Moodle reports
+  that it could not send the email, the page shows Moodle's reason, and the dashboard keeps it for a week.
+- The schedule summary now counts Moodle users and outside addresses together ("2 recipient(s) (0 Moodle, 2 outside
+  address(es))") instead of showing "0 recipient(s)" for a schedule that only has outside addresses.
+
 ## 0.9.2 (release candidate)
 
 - Now supports Moodle 5.0, 5.1, 5.2 and 5.3 (0.9.1 and earlier: 5.3 only). The plugin code needed no change. The full

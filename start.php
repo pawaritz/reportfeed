@@ -33,6 +33,7 @@ $PAGE->set_url(new moodle_url('/local/reportfeed/start.php'));
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('start_title', 'local_reportfeed'));
+echo \local_reportfeed\local\dashboard::nav('start');
 echo html_writer::tag('p', get_string('start_intro', 'local_reportfeed'));
 
 $badges = [

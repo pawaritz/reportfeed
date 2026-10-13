@@ -60,6 +60,7 @@ if ($action === 'delete' && $id) {
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('bundles', 'local_reportfeed'));
+echo \local_reportfeed\local\dashboard::nav('bundles');
 echo html_writer::div(get_string('bundles_intro', 'local_reportfeed'), 'text-muted mb-3');
 
 $table = new html_table();

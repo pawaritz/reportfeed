@@ -25,6 +25,8 @@ what a custom report does not give you out of the box:
 - **Activity-level files** you tick on, column by column: activity completion, assignments, quizzes and engagement.
 - **A learner roster** for keeping a master list (for example HR data) in step with Moodle: who is a learner now, marked
   new or unchanged since the last send, plus anyone removed with the reason. It can be the only file a schedule sends.
+- **A dashboard** (Site administration > Reports > Reportfeed > Dashboard): on or off, how far the setup is and what to
+  do next, your schedules, the latest runs, and the main buttons in one place.
 - **A Getting started page** with a live checklist of the setup steps (mail, cron, attachments, receiving user, first
   schedule, test send), so a new administrator can see what is still missing.
 - **A teacher digest** that each teacher controls per course (on or off, day, hour, columns, colleagues to nominate).
@@ -42,19 +44,37 @@ what a custom report does not give you out of the box:
 1. Copy the `reportfeed` folder to `<moodle>/public/local/reportfeed`, or upload the ZIP at
    Site administration > Plugins > Install plugins.
 2. Visit Site administration > Notifications and finish the upgrade.
-3. Open Site administration > Plugins > Local plugins > Reportfeed > Getting started and follow the checklist.
+3. Open Site administration > Reports > Reportfeed > Dashboard (or Getting started) and follow the checklist.
 
 No Composer step and no third-party libraries. Nothing is sent until you tick **Enable Reportfeed**.
 
+## Before your first report: set up Moodle's outgoing mail
+
+Reportfeed has no mail settings of its own and sends through Moodle's. A new site often has none, and then no report
+arrives (Moodle falls back to the web server's own mail, which most mailbox providers drop). Do this once:
+
+1. Site administration > Server > Email > **Outgoing mail configuration**: SMTP hosts, security, user name, password and
+   the no-reply address. Turn **Allow attachments** on. For Gmail use host `smtp.gmail.com:587`, security TLS, your full
+   address as the user name, and a Google *app password* (it needs 2-step verification) as the password.
+2. Site administration > Server > Email > **Test outgoing mail configuration**: send a test to yourself. If this one does
+   not arrive, fix it first.
+3. On the Reportfeed dashboard, press **Turn on**.
+4. Add a schedule, then on Schedules press **Send test to me**. It sends the real files to your own Moodle address only.
+   The page tells you which address, and shows Moodle's reason when Moodle could not send.
+
 ## Using it
 
-**Getting started.** Local plugins > Getting started lists the steps in order with a live status for each: Moodle's
+**Dashboard.** Reports > Reportfeed > Dashboard shows whether Reportfeed is on, how many setup steps are done and which
+comes next, each schedule with how many people it sends to, the latest runs, and a mail problem if Moodle reported one
+in the last week. A row of links at the top of every Reportfeed screen reaches the others.
+
+**Getting started.** Reports > Reportfeed > Getting started lists the steps in order with a live status for each: Moodle's
 outgoing mail (SMTP server, port, security, user, password, no-reply address, and SPF and DKIM at your mail provider),
 "Allow attachments", cron, the Reportfeed master switch, a user who holds the receiving capability, a first schedule,
 its recipients, a test send, and a look at the first real run. Reportfeed has no mail settings of its own: it uses Moodle's.
 
 **HR feed.** Give the receiving user (a person or a service account) a role with `local/reportfeed:receivehrfeed`.
-Then, under Local plugins > Reportfeed schedules, add a schedule: how often and when (site timezone), which courses
+Then, under Reports > Reportfeed > Schedules, add a schedule: how often and when (site timezone), which courses
 (all courses, some categories, chosen courses or a named bundle), which identity columns to include, the file format
 (CSV or Excel), optional zip and byte order mark, and the recipients. Each recipient gets one email per file and part:
 `learner_course` (one row per learner and course) and `learner_summary` (one row per learner), or whichever of those
@@ -73,7 +93,7 @@ new. The email says how many learners there are now and how many are new and rem
 used as the comparison. Narrowing a schedule's courses shows as removals. Only people enrolled as learners in the
 covered courses are listed, not every Moodle account.
 
-**Bundles.** Local plugins > Reportfeed course bundles. A bundle cannot be deleted while a schedule uses it.
+**Bundles.** Reports > Reportfeed > Course bundles. A bundle cannot be deleted while a schedule uses it.
 
 **Activity files.** In the schedule form, under "Activity-level files", tick any of: activity completion (one row per
 learner and tracked activity), assignments (due date, submission status, grade), quizzes (attempts, status, grade) and
@@ -98,7 +118,7 @@ You can add your own introduction and footer (plain text, up to 1,000 characters
 the teacher digest only, never in the HR feed. A teacher opens a course, then More > Weekly digest. Default digest: Monday 07:00, completion status, completion
 percent, last access to the course, days inactive. Grade columns are offered only to teachers who may see grades.
 
-**Run log.** Local plugins > Reportfeed run log shows every run. There is no failure email by design: look here.
+**Run log.** Reports > Reportfeed > Run log shows every run. There is no failure email by design: look here.
 
 ## Settings
 

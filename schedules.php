@@ -22,6 +22,7 @@
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use local_reportfeed\local\dashboard;
 use local_reportfeed\local\health;
 use local_reportfeed\local\run_manager;
 use local_reportfeed\local\schedule_time;
@@ -64,22 +65,38 @@ if ($action && $id) {
             $queued ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
         );
     } else if ($action === 'test') {
+        $started = time();
         try {
             $count = (new run_manager())->send_test($id, $USER);
-            redirect(
-                $url,
-                get_string('schedule_testsent', 'local_reportfeed', $count),
-                null,
-                \core\output\notification::NOTIFY_SUCCESS
-            );
         } catch (moodle_exception $e) {
             redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
         }
+        $problem = dashboard::last_mail_error();
+        if ($problem && $problem['time'] >= $started) {
+            redirect(
+                $url,
+                get_string('schedule_testfailed', 'local_reportfeed', s($problem['error'])),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
+        if ($count) {
+            // Mail works again, so an older failure is no longer news.
+            unset_config('lastmailerror', 'local_reportfeed');
+        }
+        redirect(
+            $url,
+            $count ? get_string('schedule_testsent', 'local_reportfeed', (object) ['count' => $count, 'email' => s($USER->email)])
+                : get_string('schedule_testnone', 'local_reportfeed'),
+            null,
+            $count ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
+        );
     }
 }
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('schedules', 'local_reportfeed'));
+echo dashboard::nav('schedules');
 echo html_writer::tag('p', html_writer::link(
     new moodle_url('/local/reportfeed/start.php'),
     get_string('start_healthlink', 'local_reportfeed')

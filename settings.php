@@ -24,32 +24,25 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-// The getting-started page is the first entry, then the screens below.
-$ADMIN->add('localplugins', new admin_externalpage(
-    'local_reportfeed_start',
-    new lang_string('start_title', 'local_reportfeed'),
-    new moodle_url('/local/reportfeed/start.php'),
-    'local/reportfeed:manageschedules'
-));
-// The screens below open with their own capability, so a manager without site configuration can use them.
-$ADMIN->add('localplugins', new admin_externalpage(
-    'local_reportfeed_schedules',
-    new lang_string('schedules', 'local_reportfeed'),
-    new moodle_url('/local/reportfeed/schedules.php'),
-    'local/reportfeed:manageschedules'
-));
-$ADMIN->add('localplugins', new admin_externalpage(
-    'local_reportfeed_bundles',
-    new lang_string('bundles', 'local_reportfeed'),
-    new moodle_url('/local/reportfeed/bundles.php'),
-    'local/reportfeed:manageschedules'
-));
-$ADMIN->add('localplugins', new admin_externalpage(
-    'local_reportfeed_log',
-    new lang_string('runlog', 'local_reportfeed'),
-    new moodle_url('/local/reportfeed/log.php'),
-    'local/reportfeed:manageschedules'
-));
+// One Reportfeed section under Site administration > Reports, with the home page first. The screens open with their
+// own capability, so a manager without site configuration can use them.
+$ADMIN->add('reports', new admin_category('local_reportfeed_cat', new lang_string('pluginname', 'local_reportfeed')));
+foreach (
+    [
+        'home' => ['index.php', 'home_title'],
+        'start' => ['start.php', 'start_title'],
+        'schedules' => ['schedules.php', 'schedules'],
+        'bundles' => ['bundles.php', 'bundles'],
+        'log' => ['log.php', 'runlog'],
+    ] as $name => [$file, $string]
+) {
+    $ADMIN->add('local_reportfeed_cat', new admin_externalpage(
+        'local_reportfeed_' . $name,
+        new lang_string($string, 'local_reportfeed'),
+        new moodle_url('/local/reportfeed/' . $file),
+        'local/reportfeed:manageschedules'
+    ));
+}
 
 if ($hassiteconfig) {
     $settings = new admin_settingpage('local_reportfeed', new lang_string('pluginname', 'local_reportfeed'));
@@ -59,7 +52,12 @@ if ($hassiteconfig) {
         $settings->add(new admin_setting_heading(
             'local_reportfeed/startlink',
             '',
-            html_writer::link(new moodle_url('/local/reportfeed/start.php'), get_string('start_healthlink', 'local_reportfeed'))
+            html_writer::link(new moodle_url('/local/reportfeed/index.php'), get_string('home_open', 'local_reportfeed'))
+                . ' '
+                . html_writer::link(
+                    new moodle_url('/local/reportfeed/start.php'),
+                    get_string('start_healthlink', 'local_reportfeed')
+                )
         ));
         // Health notice: attachments must be allowed or emails arrive without their CSV.
         if (!\local_reportfeed\local\health::attachments_enabled()) {

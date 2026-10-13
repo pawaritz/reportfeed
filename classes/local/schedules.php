@@ -267,12 +267,13 @@ final class schedules {
             fn($file) => get_string("hr_short_$file", 'local_reportfeed'),
             array_values(array_intersect(contract::HR_FILES, array_filter(explode(',', (string) $s->hrfiles))))
         );
-        $parts = [$scope, get_string('summary_recipients', 'local_reportfeed', $people)];
+        $parts = [$scope, $outside
+            ? get_string('summary_recipients_ext', 'local_reportfeed', (object) [
+                'total' => $people + $outside, 'people' => $people, 'outside' => $outside,
+            ])
+            : get_string('summary_recipients', 'local_reportfeed', $people)];
         if ($hr) {
             $parts[] = implode(', ', $hr);
-        }
-        if ($outside) {
-            $parts[] = get_string('summary_external', 'local_reportfeed', $outside);
         }
         if ($files = activity_options::files($s)) {
             $parts[] = get_string('summary_activity', 'local_reportfeed', count($files));

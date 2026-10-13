@@ -97,6 +97,7 @@ if ($runs) {
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('runlog', 'local_reportfeed'));
+echo \local_reportfeed\local\dashboard::nav('log');
 echo html_writer::div(get_string('log_note', 'local_reportfeed'), 'text-muted mb-3');
 
 $options = ['' => get_string('all')];
