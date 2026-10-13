@@ -25,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_reportfeed';
-$plugin->version = 2026100807;
-$plugin->requires = 2026100500; // Moodle 5.3 build.
-$plugin->supported = [503, 503];
+$plugin->version = 2026101300;
+$plugin->requires = 2025041400; // Moodle 5.0.0 build.
+$plugin->supported = [500, 503];
 $plugin->maturity = MATURITY_RC;
-$plugin->release = '0.9.1';
+$plugin->release = '0.9.2';

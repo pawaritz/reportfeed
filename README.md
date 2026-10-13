@@ -32,7 +32,7 @@ what a custom report does not give you out of the box:
 
 ## Requirements
 
-- Moodle 5.3 (build 2026100500) or later in the 5.3 branch, PHP 8.3+.
+- Moodle 5.0, 5.1, 5.2 or 5.3, PHP 8.3 or later. The full test suite passes on all four (5.0.11, 5.1.8, 5.2.4 and 5.3 builds). Moodle 5.0 and 5.1 also allow PHP 8.2; that is only covered by the GitHub test run.
 - Cron running at least every five minutes.
 - Outgoing email configured, and Moodle's `allowattachments` setting turned on. The plugin warns when it is off,
   because Moodle then sends emails without their CSV file and without any error. Reportfeed refuses to send in that state.

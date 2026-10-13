@@ -115,10 +115,10 @@ final class run_manager_test extends \advanced_testcase {
     /**
      * The captured emails.
      *
-     * @param \core\test\phpunit\phpmailer_sink $sink
+     * @param object $sink
      * @return array[] each: to, subject, files, body, csv
      */
-    private function mails(\core\test\phpunit\phpmailer_sink $sink): array {
+    private function mails(object $sink): array {
         return mail_reader::read($sink);
     }
 

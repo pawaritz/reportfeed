@@ -1,5 +1,13 @@
 # Changes
 
+## 0.9.2 (release candidate)
+
+- Now supports Moodle 5.0, 5.1, 5.2 and 5.3 (0.9.1 and earlier: 5.3 only). The plugin code needed no change. The full
+  PHPUnit suite (165 tests, 1,008 assertions) was run on PostgreSQL on 5.0.11, 5.1.8, 5.2.4 and 5.3; the only edit was in
+  two test helpers, which named a mail-sink class that older Moodle versions call differently. Behat and MySQL or
+  MariaDB were run on 5.3 only; the GitHub test run now covers the older versions too.
+- Requires Moodle 5.0.0 (build 2025041400) or later; PHP 8.3 tested.
+
 ## 0.9.1 (release candidate)
 
 Fixes from an independent code review (security, privacy and SQL, contract, name check). No schema change.

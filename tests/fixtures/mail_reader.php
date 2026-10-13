@@ -30,10 +30,10 @@ final class mail_reader {
     /**
      * Every captured email as plain data.
      *
-     * @param \core\test\phpunit\phpmailer_sink $sink
+     * @param object $sink
      * @return array[] each: to, subject, files (attachment names), body (plain text, LF), csv (name => content)
      */
-    public static function read(\core\test\phpunit\phpmailer_sink $sink): array {
+    public static function read(object $sink): array {
         $out = [];
         foreach ($sink->get_messages() as $m) {
             $files = [];
