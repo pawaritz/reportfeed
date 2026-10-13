@@ -52,3 +52,18 @@ Feature: The Reportfeed dashboard
     And I press "Send test to me"
     Then I should see "were handed to Moodle mail for moodle@example.com"
     And I should see "look in the spam folder"
+
+  Scenario: Send test to all recipients asks first and names every address
+    Given I log in as "admin"
+    And the following config values are set as admin:
+      | allowexternal | 1 | local_reportfeed |
+    And I visit "/local/reportfeed/schedule.php"
+    And I set the field "Name" to "Everyone"
+    And I set the field "Other email addresses (not Moodle users)" to "someone@example.com"
+    And I press "Save changes"
+    When I visit "/local/reportfeed/schedules.php"
+    And I press "Send test to all recipients"
+    Then I should see "someone@example.com"
+    And I should see "Learner data leaves Moodle"
+    And I press "Continue"
+    And I should see "were handed to Moodle mail for: someone@example.com"

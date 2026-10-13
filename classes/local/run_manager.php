@@ -172,6 +172,54 @@ final class run_manager {
      * @return int number of emails handed to Moodle mail
      */
     public function send_test(int $scheduleid, \stdClass $to): int {
+        return $this->send_test_to($scheduleid, [$to]);
+    }
+
+    /**
+     * The people "Send test to all recipients" reaches: the schedule's own Moodle recipients who can still log in,
+     * and its outside addresses when the site allows them. Nobody else, and no capability check, as in a test to one person.
+     *
+     * @param int $scheduleid
+     * @return \stdClass[] user records and outside stand-ins
+     */
+    public function test_targets(int $scheduleid): array {
+        global $DB;
+        $targets = array_values($DB->get_records_sql(
+            "SELECT u.*
+               FROM {local_reportfeed_recipient} r
+               JOIN {user} u ON u.id = r.userid AND u.deleted = 0 AND u.suspended = 0
+              WHERE r.scheduleid = :id
+           ORDER BY u.id",
+            ['id' => $scheduleid]
+        ));
+        if (external::allowed()) {
+            foreach (external::addresses($scheduleid) as $email) {
+                $targets[] = external::user($email);
+            }
+        }
+        return $targets;
+    }
+
+    /**
+     * Send the schedule's real files to everybody it sends to, as a test: run_id 0, nothing logged.
+     *
+     * Needs no cron, so it shows what the recipients will receive on a site where cron is not running yet.
+     *
+     * @param int $scheduleid
+     * @return int number of emails handed to Moodle mail
+     */
+    public function send_test_all(int $scheduleid): int {
+        return $this->send_test_to($scheduleid, $this->test_targets($scheduleid));
+    }
+
+    /**
+     * Build the schedule's files once and hand them to Moodle mail for each target.
+     *
+     * @param int $scheduleid
+     * @param \stdClass[] $targets
+     * @return int number of emails handed to Moodle mail
+     */
+    private function send_test_to(int $scheduleid, array $targets): int {
         global $DB;
         $schedule = $DB->get_record('local_reportfeed_schedule', ['id' => $scheduleid], '*', MUST_EXIST);
         if (!health::attachments_enabled()) {
@@ -184,8 +232,10 @@ final class run_manager {
         $summary = [];
         foreach ($this->build_files($schedule, (int) $run->periodend, $now, $summary) as $file => $result) {
             foreach ($result['parts'] as $meta) {
-                // A random item id keeps two simultaneous tests from clashing on the stored attachment.
-                $sent += mailer::send($to, random_int(1000000000, 2000000000), $file, $meta, $run, $now) ? 1 : 0;
+                foreach ($targets as $to) {
+                    // A random item id keeps two simultaneous tests from clashing on the stored attachment.
+                    $sent += mailer::send($to, random_int(1000000000, 2000000000), $file, $meta, $run, $now) ? 1 : 0;
+                }
             }
         }
         return $sent;

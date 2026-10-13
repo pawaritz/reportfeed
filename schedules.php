@@ -44,6 +44,20 @@ if ($action && $id) {
         require_sesskey();
         schedules::delete($id);
         redirect($url, get_string('schedule_deleted', 'local_reportfeed'), null, \core\output\notification::NOTIFY_SUCCESS);
+    } else if ($action === 'testall' && !optional_param('confirm', 0, PARAM_INT)) {
+        $targets = (new run_manager())->test_targets($id);
+        echo $OUTPUT->header();
+        echo $OUTPUT->confirm(
+            $targets
+                ? get_string('schedule_testallconfirm', 'local_reportfeed', (object) [
+                    'name' => s($schedule->name), 'list' => s(implode(', ', array_column($targets, 'email'))),
+                ])
+                : get_string('schedule_testallnone', 'local_reportfeed'),
+            $targets ? new moodle_url($url, ['action' => 'testall', 'id' => $id, 'confirm' => 1, 'sesskey' => sesskey()]) : $url,
+            $url
+        );
+        echo $OUTPUT->footer();
+        die();
     } else if ($action === 'delete') {
         echo $OUTPUT->header();
         echo $OUTPUT->confirm(
@@ -58,11 +72,17 @@ if ($action && $id) {
     if ($action === 'runnow') {
         $queued = $schedule->enabled && (new run_manager())->run_now($id);
         $message = $queued ? 'schedule_runqueued' : ($schedule->enabled ? 'schedule_runexists' : 'schedule_rundisabled');
+        $text = get_string($message, 'local_reportfeed');
+        // A queued run is only sent when Reportfeed is on and cron runs, so say so instead of leaving the page silent.
+        $blockers = $queued ? array_intersect(health::warnings(), ['health_disabled', 'health_cron']) : [];
+        foreach ($blockers as $blocker) {
+            $text .= ' ' . get_string($blocker, 'local_reportfeed');
+        }
         redirect(
             $url,
-            get_string($message, 'local_reportfeed'),
+            $text,
             null,
-            $queued ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
+            $queued && !$blockers ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
         );
     } else if ($action === 'test') {
         $started = time();
@@ -88,6 +108,35 @@ if ($action && $id) {
             $url,
             $count ? get_string('schedule_testsent', 'local_reportfeed', (object) ['count' => $count, 'email' => s($USER->email)])
                 : get_string('schedule_testnone', 'local_reportfeed'),
+            null,
+            $count ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
+        );
+    } else if ($action === 'testall') {
+        $started = time();
+        $manager = new run_manager();
+        $targets = $manager->test_targets($id);
+        try {
+            $count = $targets ? $manager->send_test_all($id) : 0;
+        } catch (moodle_exception $e) {
+            redirect($url, $e->getMessage(), null, \core\output\notification::NOTIFY_ERROR);
+        }
+        $problem = dashboard::last_mail_error();
+        if ($problem && $problem['time'] >= $started) {
+            redirect(
+                $url,
+                get_string('schedule_testfailed', 'local_reportfeed', s($problem['error'])),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
+        if ($count) {
+            unset_config('lastmailerror', 'local_reportfeed');
+        }
+        redirect(
+            $url,
+            $count ? get_string('schedule_testallsent', 'local_reportfeed', (object) [
+                'count' => $count, 'list' => s(implode(', ', array_column($targets, 'email'))),
+            ]) : get_string('schedule_testallnone', 'local_reportfeed'),
             null,
             $count ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_WARNING
         );
@@ -120,7 +169,7 @@ foreach ($DB->get_records('local_reportfeed_schedule', null, 'name ASC') as $sch
         new moodle_url('/local/reportfeed/preview.php', ['id' => $schedule->id]),
         get_string('preview', 'local_reportfeed')
     );
-    foreach (['runnow' => 'schedule_runnow', 'test' => 'schedule_test'] as $do => $label) {
+    foreach (['runnow' => 'schedule_runnow', 'test' => 'schedule_test', 'testall' => 'schedule_testall'] as $do => $label) {
         $buttons[] = $OUTPUT->single_button(
             new moodle_url($url, ['action' => $do, 'id' => $schedule->id, 'sesskey' => sesskey()]),
             get_string($label, 'local_reportfeed')

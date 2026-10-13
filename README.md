@@ -59,8 +59,9 @@ arrives (Moodle falls back to the web server's own mail, which most mailbox prov
 2. Site administration > Server > Email > **Test outgoing mail configuration**: send a test to yourself. If this one does
    not arrive, fix it first.
 3. On the Reportfeed dashboard, press **Turn on**.
-4. Add a schedule, then on Schedules press **Send test to me**. It sends the real files to your own Moodle address only.
-   The page tells you which address, and shows Moodle's reason when Moodle could not send.
+4. Add a schedule, then on Schedules press **Send test to me** (the real files, to the address of your own Moodle
+   account) or **Send test to all recipients** (to the schedule's own people, after a confirmation). Neither needs cron.
+   The page lists the addresses used and shows Moodle's reason when Moodle could not send.
 
 ## Using it
 

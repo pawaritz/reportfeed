@@ -676,6 +676,63 @@ final class run_manager_test extends \advanced_testcase {
     }
 
     /**
+     * Send test to all recipients: the schedule's own people get the real files, marked as a test, with no run logged.
+     */
+    public function test_send_test_all_reaches_the_schedules_recipients(): void {
+        global $DB;
+        set_config('allowexternal', 1, 'local_reportfeed');
+        $this->course();
+        $a = $this->hr_user();
+        $gone = $this->getDataGenerator()->create_user(['suspended' => 1]);
+        $schedule = $this->schedule([$a, $gone]);
+        \local_reportfeed\local\external::store($schedule->id, "hr@partner.example\nsecond@other.example");
+        $sink = $this->redirectEmails();
+
+        $manager = new run_manager();
+        $this->assertCount(3, $manager->test_targets($schedule->id), 'one account, two outside addresses; not the suspended one');
+        $this->assertSame(6, $manager->send_test_all($schedule->id));
+
+        $mails = $this->mails($sink);
+        $to = array_column($mails, 'to');
+        $this->assertCount(6, $mails);
+        $this->assertSame(2, count(array_keys($to, $a->email)));
+        $this->assertSame(2, count(array_keys($to, 'hr@partner.example')));
+        $this->assertSame(2, count(array_keys($to, 'second@other.example')));
+        $this->assertNotContains($gone->email, $to);
+        foreach ($mails as $mail) {
+            $this->assertStringContainsString("run_id: 0\n", $mail['body']);
+        }
+        $this->assertSame(0, $DB->count_records('local_reportfeed_run'));
+        $this->assertSame(0, $DB->count_records('local_reportfeed_delivery'));
+        $this->assertSame(0, $DB->count_records('files', ['component' => 'local_reportfeed', 'filearea' => 'attachment']));
+    }
+
+    /**
+     * Outside addresses are left out when the site setting is off, and a schedule with nobody sends nothing.
+     */
+    public function test_send_test_all_respects_the_outside_address_setting(): void {
+        set_config('allowexternal', 0, 'local_reportfeed');
+        $this->course();
+        $a = $this->hr_user();
+        $schedule = $this->schedule([$a]);
+        \local_reportfeed\local\external::store($schedule->id, 'hr@partner.example');
+        $sink = $this->redirectEmails();
+
+        $manager = new run_manager();
+        $this->assertSame(2, $manager->send_test_all($schedule->id));
+        $this->assertSame([$a->email], array_unique(array_column($this->mails($sink), 'to')));
+
+        $empty = $this->schedule([], ['name' => 'Nobody']);
+        $this->assertSame([], $manager->test_targets($empty->id));
+        $this->assertSame(0, $manager->send_test_all($empty->id));
+        $this->assertCount(2, $this->mails($sink));
+
+        set_config('allowattachments', 0);
+        $this->expectException(\moodle_exception::class);
+        $manager->send_test_all($schedule->id);
+    }
+
+    /**
      * Only failed, expired, skipped and too-large runs can be resent.
      */
     public function test_resendable_statuses(): void {

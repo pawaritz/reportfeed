@@ -1,5 +1,18 @@
 # Changes
 
+## 0.9.4 (release candidate)
+
+No schema change.
+
+- New button **Send test to all recipients** on the Schedules page. It asks first, then sends the schedule's real files,
+  marked as a test (`run_id: 0`), to the schedule's Moodle recipients and outside addresses, and lists every address it
+  used. It needs no cron, so it works on a site where cron is not running yet. Suspended and deleted accounts are
+  skipped, outside addresses only count when the site setting allows them, and nothing is logged.
+- **Send test to me** now says plainly that it goes to the address of the Moodle account you are logged in as, not to the
+  schedule's recipients.
+- **Run now** warns on the spot when Reportfeed is switched off or Moodle cron has not run in the last hour, because the
+  queued run is only sent when both are in order.
+
 ## 0.9.3 (release candidate)
 
 Easier to find and to set up. No schema change.
